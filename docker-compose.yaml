@@ -9,6 +9,8 @@ services:
       - /docker/database/mysql:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: "12345"
+    networks:
+      - one_pay_network
   adminer:
     image: adminer
     restart: always
@@ -17,6 +19,8 @@ services:
       ADMINER_DEFAULT_SERVER: mysql
     ports:
       - 8081:8080
+    networks:
+      - one_pay_network
   mongo:
     image: mongo:7.0.1
     restart: always
@@ -25,6 +29,8 @@ services:
       - /docker/database/mongo:/data/db
     ports:
       - '27018:27017'
+    networks:
+      - one_pay_network
   mongo-express:
     image: mongo-express
     restart: always
@@ -35,6 +41,8 @@ services:
       - 8082:8081
     environment:
       - ME_CONFIG_MONGODB_SERVER=mongo
+    networks:
+      - one_pay_network
   app:
     build: .
     restart: always
@@ -47,3 +55,8 @@ services:
       - mongo
     ports:
       - "3000:8080"
+    networks:
+      - one_pay_network
+networks:
+  one_pay_network:
+    external: true

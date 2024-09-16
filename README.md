@@ -4,6 +4,9 @@
 If Docker Not Installed in Local system Run this Comand else Ignore this
 sudo sh ./docker.sh
 
+# Create Network
+sudo docker network create one_pay_network
+
 # Build & Run Application
 sudo docker compose up --build -d
 
