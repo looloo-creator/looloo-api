@@ -1,0 +1,7 @@
+module.exports.USERSTATUS = {
+  "VERIFICATIONPENDING": 1,
+  "ACTIVE": 2,
+  "BLOCKED": 3,
+  "DEACTIVATED": 4,
+}
+
