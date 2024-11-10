@@ -1,0 +1,67 @@
+version: "3.0"
+services:
+  mysql:
+    image: rajasekar9698/one-pay-mysql:1.0.0
+    volumes:
+      - "./sql-scripts:/docker-entrypoint-initdb.d"
+      - /docker/database/mysql:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "12345"
+    networks:
+      - one_pay_swarm_network
+
+  adminer:
+    image: rajasekar9698/one-pay-adminer:1.0.0
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql
+    ports:
+      - 8081:8080
+    networks:
+      - one_pay_swarm_network
+
+  mongo:
+    image: rajasekar9698/one-pay-mongo:1.0.0
+    volumes:
+      - /docker/database/mongo:/data/db
+    ports:
+      - '27018:27017'
+    networks:
+      - one_pay_swarm_network
+
+  mongo-express:
+    image: rajasekar9698/one-pay-mongo-express:1.0.0
+    ports:
+      - 8082:8081
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongo
+    networks:
+      - one_pay_swarm_network
+    deploy:
+      replicas: 2
+
+  api:
+    image: rajasekar9698/one-pay-api:2.0.0
+    working_dir: /usr/src/app
+    volumes:
+      - ./:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - "3000:8080"
+    networks:
+      - one_pay_swarm_network
+    deploy:
+      replicas: 2
+
+  app:
+    image: rajasekar9698/one-pay-app:1.0.0
+    working_dir: /usr/src/app
+    ports:
+      - "9000:80"
+    networks:
+      - one_pay_swarm_network
+    deploy:
+      replicas: 2
+
+networks:
+  one_pay_swarm_network:
+    external: true

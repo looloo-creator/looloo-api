@@ -1,0 +1,18 @@
+version: "3.0"
+services:
+  api:
+    image: rajasekar9698/one-pay-api:$(Build.BuildId)
+    working_dir: /usr/src/app
+    volumes:
+      - ./:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - "3000:8080"
+    networks:
+      - one_pay_swarm_network
+    deploy:
+      replicas: 2
+
+networks:
+  one_pay_swarm_network:
+    external: true
