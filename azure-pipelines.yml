@@ -29,10 +29,16 @@ stages:
         repository: $(imageName)
         command: build
         Dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
-
     - task: Docker@2
       displayName: Push an image
       inputs:
         command: push
         repository: $(imageName)
         containerRegistry: 'DockerHubConnection'
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'  # Directory with your build output
+        ArtifactName: 'drop'  # Artifact name
+        publishLocation: 'Container'  # Location to store the artifact (e.g., in Azure DevOps)
+
