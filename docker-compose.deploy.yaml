@@ -1,7 +1,7 @@
 version: "3.0"
 services:
   api:
-    image: rajasekar9698/one-pay-api:$(Build.BuildId)
+    image: rajasekar9698/one-pay-api:$$BUILD_BUILDID
     working_dir: /usr/src/app
     volumes:
       - ./:/usr/src/app
