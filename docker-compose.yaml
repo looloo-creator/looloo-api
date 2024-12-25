@@ -28,7 +28,7 @@ services:
     volumes:
       - /docker/database/mongo:/data/db
     ports:
-      - '27018:27017'
+      - "27018:27017"
     networks:
       - one_pay_network
   nginx:
@@ -37,7 +37,9 @@ services:
     restart: always
     ports:
       - "80:80"
+      - "443:443"
     volumes:
+      - ./ssl:/etc/nginx/ssl
       - ./nginx.conf:/etc/nginx/nginx.conf
     networks:
       - one_pay_network
