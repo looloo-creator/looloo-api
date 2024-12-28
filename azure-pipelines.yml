@@ -1,10 +1,7 @@
 trigger:
   branches:
     include:
-      - master
-      - development
-      - feature/*
-      - release/*
+      - main
 
 resources:
 - repo: self
