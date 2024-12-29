@@ -36,8 +36,6 @@ services:
       - ME_CONFIG_MONGODB_SERVER=mongo
     networks:
       - one_pay_swarm_network
-    deploy:
-      replicas: 2
 
   api:
     image: rajasekar9698/one-pay-api:2.0.0
@@ -49,8 +47,6 @@ services:
       - "3000:8080"
     networks:
       - one_pay_swarm_network
-    deploy:
-      replicas: 2
 
 networks:
   one_pay_swarm_network:
