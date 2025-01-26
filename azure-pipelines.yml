@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-      - main
+      - master
 
 resources:
 - repo: self
@@ -25,7 +25,7 @@ stages:
       inputs:
         repository: $(imageName)
         command: build
-        Dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
+        Dockerfile: '$(Build.SourcesDirectory)/Dockerfile.production'
     - task: Docker@2
       displayName: Push an image
       inputs:
