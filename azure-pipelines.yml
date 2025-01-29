@@ -33,9 +33,8 @@ stages:
         repository: $(imageName)
         containerRegistry: 'DockerHubConnection'
 
-    - task: PublishBuildArtifacts@1
-      inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)'  # Directory with your build output
-        ArtifactName: 'drop'  # Artifact name
-        publishLocation: 'Container'  # Location to store the artifact (e.g., in Azure DevOps)
+    - bash: |
+       docker image prune -a -f
+
+      displayName: 'Remove Unused Docker Images'
 
