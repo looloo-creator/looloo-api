@@ -9,7 +9,9 @@ const AccountSchema = mongoose.Schema({
     amount: Number,
     reason: String,
     members: Array,
-    status: Boolean
+    file: String,
+    status: Boolean,
+    fileName: String
 }, {
     timestamps: true
 });
