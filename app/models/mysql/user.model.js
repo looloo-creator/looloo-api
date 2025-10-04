@@ -10,6 +10,7 @@ const user = db.define(
         is_email_verified: { type: sequelize.BOOLEAN },
         email_verified_at: { type: sequelize.DATE },
         email_token: { type: sequelize.STRING },
+        refresh_token: { type: sequelize.STRING },
         status: { type: sequelize.NUMBER },
         last_login: { type: sequelize.DATE },
         is_active: { type: sequelize.BOOLEAN },

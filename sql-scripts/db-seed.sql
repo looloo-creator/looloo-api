@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `is_email_verified` tinyint NOT NULL DEFAULT '0' COMMENT '0-Not verified, 1-verified',
   `email_verified_at` datetime DEFAULT NULL,
   `email_token` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `refresh_token` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `status` tinyint NOT NULL DEFAULT '1' COMMENT '1-Verification Pending, 2-Active, 3-Blocked, 4-Deactivated By User',
   `last_login` datetime DEFAULT NULL,
   `is_active` tinyint NOT NULL DEFAULT '1' COMMENT '0-Deleted, 1-Active',

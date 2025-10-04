@@ -1,5 +1,7 @@
 FROM node:18.18.0-slim
 
+RUN apt-get update && apt-get install -y procps
+
 WORKDIR /usr/src/app
 
 COPY package*.json ./
