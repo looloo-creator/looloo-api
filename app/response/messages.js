@@ -41,8 +41,12 @@ const message = {
   /* Error */
   R400: { type: "error", message: "Bad Request" },
   R401: { type: "error", message: "Authentication Failed" },
-  R402: { type: "error", message: "Token doesn't exists" },
-  R403: { type: "error", message: "Invalid Token" },
+  R402: {
+    type: "error",
+    message:
+      "Duplicate session detected. Your account is active on another device.",
+  },
+  R403: { type: "error", message: "Token doesn't exists" },
   R404: {
     type: "error",
     message: "Something Went Wrong, Please Try after sometime",

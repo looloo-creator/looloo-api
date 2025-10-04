@@ -10,6 +10,10 @@ const authenticate = (req, res, next) => {
   if (!token) {
     return res.status(401).send(Responser.error("R401").data);
   }
+
+  const refreshToken = req.cookies.refreshToken;
+  if (!refreshToken) return res.status(403).send(Responser.error("R403").data);
+
   token = token.replace("Bearer ", "");
   jwt.verify(token, getenv("JWT_SECRET_KEY"), async (err, decoded) => {
     if (err) {
@@ -26,7 +30,9 @@ const authenticate = (req, res, next) => {
         userData.status == USERSTATUS.ACTIVE &&
         userData.is_active
       ) {
-        req.user = userData; // Add the decoded user information to the request object
+        if (userData.refresh_token !== refreshToken)
+          return res.status(402).send(Responser.error("R402").data);
+        req.user = userData;
         next();
       } else {
         return res.status(401).send(Responser.error("R401").data);

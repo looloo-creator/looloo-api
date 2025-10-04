@@ -76,16 +76,16 @@ const login = async (req, res) => {
       where: { email: req.body.email },
     });
 
-    if (!userData) return res.status(404).send(Responser.custom("R202").data); // user not found
+    if (!userData) return res.status(200).send(Responser.custom("R202").data); // user not found
 
     if (!userData.is_email_verified)
-      return res.status(401).send(Responser.custom("R203").data);
+      return res.status(200).send(Responser.custom("R203").data);
 
     if (!userData.is_active || userData.status !== USERSTATUS.ACTIVE)
-      return res.status(403).send(Responser.custom("R204").data);
+      return res.status(200).send(Responser.custom("R204").data);
 
     const isValid = await bcrypt.compare(req.body.password, userData.password);
-    if (!isValid) return res.status(401).send(Responser.custom("R205").data);
+    if (!isValid) return res.status(200).send(Responser.custom("R205").data);
 
     // Generate tokens
     const accessToken = jwt.sign(
@@ -138,7 +138,7 @@ const refreshToken = async (req, res) => {
     });
 
     if (!userData || userData.refresh_token !== token)
-      return res.status(403).send(Responser.error("R403").data);
+      return res.status(402).send(Responser.error("R402").data);
 
     // Generate new tokens
     const newAccessToken = jwt.sign(
