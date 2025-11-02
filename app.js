@@ -37,7 +37,10 @@ app.set("view engine", "pug");
 app.use(logger("dev"));
 
 /* cors */
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:4200',
+  credentials: true,
+}));
 app.use(corsall);
 /* cors */
 

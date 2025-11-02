@@ -5,8 +5,7 @@ const model = require("../models/index");
 const { USERSTATUS } = require("../../config/custom.config");
 
 const authenticate = (req, res, next) => {
-  let token = req.headers.authorization; // Assuming the token is sent in the 'Authorization' header
-  let response;
+  let token = req.headers.authorization;
   if (!token) {
     return res.status(401).send(Responser.error("R401").data);
   }
@@ -40,7 +39,6 @@ const authenticate = (req, res, next) => {
     } else {
       return res.status(401).send(Responser.error("R401").data);
     }
-    return res.status(response.statusCode).send(response.data);
   });
 };
 module.exports = authenticate;
