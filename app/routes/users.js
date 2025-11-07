@@ -6,5 +6,6 @@ router.post('/create', userController.create);
 router.post('/login', userController.login);
 router.post('/refresh', userController.refresh);
 router.get('/verifyemail/:token', userController.verifyemail);
+router.post('/send-verification-link', userController.sendLink);
 
 module.exports = router;

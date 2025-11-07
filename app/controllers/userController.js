@@ -6,6 +6,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { getenv } = require("../Utils/common");
 const { USERSTATUS } = require("../../config/custom.config");
+const { default: axios } = require("axios");
 
 const create = async (req, res) => {
   let validation = new Validator(req.body, {
@@ -47,6 +48,24 @@ const create = async (req, res) => {
           delete userData.password;
           response = Responser.custom("R201");
         });
+
+        let data = JSON.stringify({
+          email: req.body.email,
+        });
+
+        let config = {
+          method: "post",
+          url: getenv("MAIL_SERVICE_URL") + "/auth/send-verification",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          data: data,
+        };
+
+        axios
+          .request(config)
+          .then((response) => {})
+          .catch((error) => {});
       }
     } catch (error) {
       console.log(error);
@@ -193,16 +212,58 @@ const verifyemail = async (req, res) => {
         userData.status = USERSTATUS.ACTIVE;
         userData.email_verified_at = new Date();
         userData.save();
-        return res.json({ message: "Email verification successful." });
+        return res.json({
+          success: true,
+          message: "Email verification successful.",
+        });
       }
     }
+    return res.status(500).json({
+      message: "Email verification Failed.",
+    });
   } catch (error) {
     return res.status(404).json({ message: error.message });
   }
+};
+
+const sendLink = async (req, res) => {
+  let validation = new Validator(req.body, {
+    email: "required|email",
+  });
+
+  if (!validation.passes()) {
+    return res
+      .status(400)
+      .send(Responser.validationfail(validation.errors).data);
+  }
+
+  let data = JSON.stringify({
+    email: req.body.email,
+  });
+
+  let config = {
+    method: "post",
+    url: getenv("MAIL_SERVICE_URL") + "/auth/send-verification",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    data: data,
+  };
+
+  axios
+    .request(config)
+    .then((response) => {
+      return res.status(200).json(response);
+    })
+    .catch((error) => {
+      console.log(error);
+      return res.status(error.status).json();
+    });
 };
 module.exports = {
   create: create,
   login: login,
   refresh: refreshToken,
   verifyemail: verifyemail,
+  sendLink: sendLink,
 };
