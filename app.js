@@ -25,11 +25,44 @@ const accountsRouter = require("./app/routes/accounts");
 
 /* Middleware Files - Start */
 const authenticate = require("./app/middlewares/authentication.js");
-const corsall = require("./app/middlewares/corsall.js");
 /* Middleware Files - End */
 
 /* Server initiation */
 let app = express();
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const warmupSqlConnection = async () => {
+  const maxAttempts = 5;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      await dbConfig.mysql.authenticate();
+      console.log("SQL connected Successfully!");
+      return;
+    } catch (error) {
+      const isLast = attempt === maxAttempts;
+      console.error(
+        `SQL warm-up attempt ${attempt}/${maxAttempts} failed: ${error.message}`
+      );
+      if (isLast) {
+        throw error;
+      }
+      await delay(5000);
+    }
+  }
+};
+
+const dbWarmupPromise = warmupSqlConnection();
+let isDbReady = false;
+
+dbWarmupPromise
+  .then(() => {
+    isDbReady = true;
+  })
+  .catch(() => {
+    isDbReady = false;
+  });
 
 /* view engine setup */
 app.set("views", path.join(__dirname, "views"));
@@ -37,11 +70,14 @@ app.set("view engine", "pug");
 app.use(logger("dev"));
 
 /* cors */
-app.use(cors({
-  origin: 'http://localhost:4200',
+const corsOptions = {
+  origin: "http://localhost:4200",
   credentials: true,
-}));
-app.use(corsall);
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"],
+};
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 /* cors */
 
 app.use(express.json());
@@ -61,6 +97,23 @@ mongoose
     console.log("Could not connect to the Mongodb. Exiting now...", err);
     process.exit();
   });
+
+app.use(async (req, res, next) => {
+  if (isDbReady) {
+    return next();
+  }
+
+  try {
+    await dbWarmupPromise;
+    isDbReady = true;
+    return next();
+  } catch (error) {
+    return res.status(503).json({
+      success: false,
+      message: "Database is waking up. Please retry shortly.",
+    });
+  }
+});
 
 app.use("/", indexRouter);
 app.use("/users", usersRouter);

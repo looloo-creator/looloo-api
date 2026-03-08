@@ -6,7 +6,29 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { getenv } = require("../Utils/common");
 const { USERSTATUS } = require("../../config/custom.config");
-const { default: axios } = require("axios");
+const { Kafka } = require("kafkajs");
+
+const kafka = new Kafka({
+  clientId: getenv("KAFKA_CLIENT_ID") || "looloo-api",
+  brokers: (getenv("KAFKA_BROKERS") || "localhost:9092")
+    .split(",")
+    .map((broker) => broker.trim())
+    .filter(Boolean),
+});
+const producer = kafka.producer();
+let producerConnected = false;
+
+const publishVerificationEmailEvent = async (email) => {
+  if (!producerConnected) {
+    await producer.connect();
+    producerConnected = true;
+  }
+
+  await producer.send({
+    topic: getenv("KAFKA_TOPIC_SEND_VERIFICATION") || "send-verification-link",
+    messages: [{ value: JSON.stringify({ email }) }],
+  });
+};
 
 const create = async (req, res) => {
   let validation = new Validator(req.body, {
@@ -49,23 +71,7 @@ const create = async (req, res) => {
           response = Responser.custom("R201");
         });
 
-        let data = JSON.stringify({
-          email: req.body.email,
-        });
-
-        let config = {
-          method: "post",
-          url: getenv("MAIL_SERVICE_URL") + "/auth/send-verification",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          data: data,
-        };
-
-        axios
-          .request(config)
-          .then((response) => {})
-          .catch((error) => {});
+        await publishVerificationEmailEvent(req.body.email);
       }
     } catch (error) {
       console.log(error);
@@ -237,28 +243,19 @@ const sendLink = async (req, res) => {
       .send(Responser.validationfail(validation.errors).data);
   }
 
-  let data = JSON.stringify({
-    email: req.body.email,
-  });
-
-  let config = {
-    method: "post",
-    url: getenv("MAIL_SERVICE_URL") + "/auth/send-verification",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    data: data,
-  };
-
-  axios
-    .request(config)
-    .then((response) => {
-      return res.status(200).json(response);
-    })
-    .catch((error) => {
-      console.log(error);
-      return res.status(error.status).json();
+  try {
+    await publishVerificationEmailEvent(req.body.email);
+    return res.status(200).json({
+      success: true,
+      message: "Verification event published.",
     });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to publish verification event.",
+    });
+  }
 };
 module.exports = {
   create: create,

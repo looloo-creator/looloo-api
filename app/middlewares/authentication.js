@@ -5,6 +5,10 @@ const model = require("../models/index");
 const { USERSTATUS } = require("../../config/custom.config");
 
 const authenticate = (req, res, next) => {
+  if (req.method === "OPTIONS") {
+    return next();
+  }
+
   let token = req.headers.authorization;
   if (!token) {
     return res.status(401).send(Responser.error("R401").data);
