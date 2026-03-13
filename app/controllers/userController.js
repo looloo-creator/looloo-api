@@ -7,6 +7,9 @@ const jwt = require("jsonwebtoken");
 const { getenv } = require("../Utils/common");
 const { USERSTATUS } = require("../../config/custom.config");
 const { Kafka } = require("kafkajs");
+const { createRemoteJWKSet, jwtVerify } = require("jose");
+const fetch = (...args) =>
+  import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
 const kafka = new Kafka({
   clientId: getenv("KAFKA_CLIENT_ID") || "looloo-api",
@@ -28,6 +31,33 @@ const publishVerificationEmailEvent = async (email) => {
     topic: getenv("KAFKA_TOPIC_SEND_VERIFICATION") || "send-verification-link",
     messages: [{ value: JSON.stringify({ email }) }],
   });
+};
+
+// ----- Social token verification helpers -----
+const verifyGoogleIdToken = async (idToken, audience) => {
+  const googleJwks = createRemoteJWKSet(
+    new URL('https://www.googleapis.com/oauth2/v3/certs'),
+  );
+  const { payload } = await jwtVerify(idToken, googleJwks, {
+    audience,
+    issuer: ['https://accounts.google.com', 'accounts.google.com'],
+  });
+  return payload;
+};
+
+const verifyMicrosoftIdToken = async (idToken, tenantId, audience) => {
+  const metadataRes = await fetch(
+    `https://login.microsoftonline.com/${tenantId}/v2.0/.well-known/openid-configuration`,
+  );
+  const metadata = await metadataRes.json();
+  const jwksUri = metadata.jwks_uri;
+  const issuer = metadata.issuer;
+  const msJwks = createRemoteJWKSet(new URL(jwksUri));
+  const { payload } = await jwtVerify(idToken, msJwks, {
+    audience,
+    issuer,
+  });
+  return payload;
 };
 
 const create = async (req, res) => {
@@ -133,8 +163,8 @@ const login = async (req, res) => {
     // Send refresh token in secure HttpOnly cookie
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: "Strict",
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? "Strict" : "Lax",
       path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
@@ -184,8 +214,8 @@ const refreshToken = async (req, res) => {
     // Update cookie
     res.cookie("refreshToken", newRefreshToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: "Strict",
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? "Strict" : "Lax",
       path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
@@ -198,6 +228,127 @@ const refreshToken = async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(403).send(Responser.error("Invalid refresh token").data);
+  }
+};
+
+// ============ SOCIAL LOGIN (Placeholder) ==============
+const socialLogin = async (req, res) => {
+  const { provider, idToken, email } = req.body;
+
+  if (!provider || !idToken) {
+    const missing = [];
+    if (!provider) missing.push('provider');
+    if (!idToken) missing.push('idToken');
+    return res.status(400).send({
+      success: false,
+      statusCode: 400,
+      message: `Missing required field(s): ${missing.join(', ')}`,
+      data: {},
+    });
+  }
+
+  // Verify provider token
+  try {
+    const googleClientId = getenv("GOOGLE_CLIENT_ID");
+    const jwtSecret = getenv("JWT_SECRET_KEY");
+    const jwtRefreshSecret = getenv("JWT_REFRESH_SECRET_KEY");
+    const accessExpiry = getenv("ACCESS_TOKEN_EXPIRY");
+    const refreshExpiry = getenv("REFRESH_TOKEN_EXPIRY");
+
+    let verifiedEmail = email;
+    let payload = null;
+
+    if (provider === 'google') {
+      if (!googleClientId) {
+        return res.status(500).send(Responser.error("Missing GOOGLE_CLIENT_ID").data);
+      }
+      payload = await verifyGoogleIdToken(idToken, googleClientId);
+      if (!verifiedEmail) verifiedEmail = payload.email;
+    } else if (provider === 'microsoft') {
+      return res.status(400).send(Responser.error("Microsoft login is disabled").data);
+    } else {
+      return res.status(400).send(Responser.error("Unsupported provider").data);
+    }
+
+    if (!verifiedEmail) {
+      return res.status(400).send({
+        success: false,
+        statusCode: 400,
+        message: "Email not present in token",
+        data: {},
+      });
+    }
+
+    let userData = await model.user.findOne({ where: { email: verifiedEmail } });
+
+    const now = new Date();
+    const displayName =
+      payload?.name ||
+      (payload?.given_name && payload?.family_name
+        ? `${payload.given_name} ${payload.family_name}`
+        : null);
+
+    if (!userData) {
+      userData = await model.user.create({
+        email: verifiedEmail,
+        username: displayName,
+        password: null,
+        is_email_verified: 1,
+        status: USERSTATUS.ACTIVE,
+        is_active: 1,
+        email_verified_at: now,
+        last_login: now,
+      });
+    } else {
+      userData.username = userData.username || displayName;
+      userData.is_email_verified = 1;
+      userData.status = USERSTATUS.ACTIVE;
+      userData.is_active = 1;
+      if (!userData.email_verified_at) {
+        userData.email_verified_at = now;
+      }
+      userData.last_login = now;
+    }
+
+    const accessToken = jwt.sign(
+      { user_id: userData.id, email: userData.email },
+      jwtSecret,
+      { expiresIn: accessExpiry }
+    );
+
+    const refreshToken = jwt.sign(
+      { user_id: userData.id, email: userData.email },
+      jwtRefreshSecret,
+      { expiresIn: refreshExpiry }
+    );
+
+    userData.refresh_token = refreshToken;
+    userData.last_login = new Date();
+    await userData.save();
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? "Strict" : "Lax",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.status(200).send(
+      Responser.success({
+        jwt: accessToken,
+        created_at: new Date(),
+        provider,
+      }).data
+    );
+  } catch (error) {
+    console.error('socialLogin error', error);
+    return res.status(500).send({
+      success: false,
+      statusCode: 500,
+      message: error?.message || 'Social login failed',
+      data: {},
+    });
   }
 };
 
@@ -263,4 +414,5 @@ module.exports = {
   refresh: refreshToken,
   verifyemail: verifyemail,
   sendLink: sendLink,
+  socialLogin: socialLogin,
 };
