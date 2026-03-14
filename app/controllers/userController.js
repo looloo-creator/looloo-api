@@ -51,12 +51,14 @@ const verifyMicrosoftIdToken = async (idToken, tenantId, audience) => {
   );
   const metadata = await metadataRes.json();
   const jwksUri = metadata.jwks_uri;
-  const issuer = metadata.issuer;
   const msJwks = createRemoteJWKSet(new URL(jwksUri));
-  const { payload } = await jwtVerify(idToken, msJwks, {
-    audience,
-    issuer,
-  });
+  const verifyOptions = { audience };
+  // For multi-tenant (common/consumers/organizations), the issuer in the token is tenant-specific.
+  // Skip strict issuer check to allow personal accounts (tid changes per user).
+  if (tenantId !== 'common' && tenantId !== 'consumers' && tenantId !== 'organizations') {
+    verifyOptions.issuer = metadata.issuer;
+  }
+  const { payload } = await jwtVerify(idToken, msJwks, verifyOptions);
   return payload;
 };
 
@@ -233,6 +235,8 @@ const refreshToken = async (req, res) => {
 
 // ============ SOCIAL LOGIN (Placeholder) ==============
 const socialLogin = async (req, res) => {
+  const msTenantId = getenv("MS_TENANT_ID");
+  const msClientId = getenv("MS_CLIENT_ID");
   const { provider, idToken, email } = req.body;
 
   if (!provider || !idToken) {
@@ -265,7 +269,11 @@ const socialLogin = async (req, res) => {
       payload = await verifyGoogleIdToken(idToken, googleClientId);
       if (!verifiedEmail) verifiedEmail = payload.email;
     } else if (provider === 'microsoft') {
-      return res.status(400).send(Responser.error("Microsoft login is disabled").data);
+      if (!msTenantId || !msClientId) {
+        return res.status(500).send(Responser.error("Missing MS_TENANT_ID or MS_CLIENT_ID").data);
+      }
+      payload = await verifyMicrosoftIdToken(idToken, msTenantId, msClientId);
+      if (!verifiedEmail) verifiedEmail = payload.email || payload.preferred_username;
     } else {
       return res.status(400).send(Responser.error("Unsupported provider").data);
     }

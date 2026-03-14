@@ -70,12 +70,36 @@ app.set("view engine", "pug");
 app.use(logger("dev"));
 
 /* cors */
+const ALLOWED_ORIGIN = "http://localhost:4200";
 const corsOptions = {
-  origin: "http://localhost:4200",
+  origin: ALLOWED_ORIGIN,
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"],
+  allowedHeaders: [
+    "Origin",
+    "X-Requested-With",
+    "Content-Type",
+    "Accept",
+    "Authorization",
+  ],
 };
+// Force explicit headers for credentialed requests and short-circuit OPTIONS
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  );
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+  );
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+  return next();
+});
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 /* cors */
