@@ -6,13 +6,51 @@ module.exports.mongo = {
   url: getenv("MONGO_URL")
 }
 
-/* Mysql Connection */
+const asBool = (value, fallback = false) => {
+  if (value === undefined) return fallback;
+  return value === "true" || value === "1";
+};
+
+const dialect = getenv("DB_DIALECT") || "mssql";
+const host = getenv("DB_HOST");
+const port = Number(getenv("DB_PORT") || 0) || undefined;
+const username = getenv("DB_USER");
+const password = getenv("DB_PASS");
+const database = getenv("DB_NAME");
+
+/* Database Connection */
 module.exports.mysql = new sequelize(
-  getenv("MYSQL_DATABASE"),
-  getenv("MYSQL_USERNAME"),
-  getenv("MYSQL_PASSWORD"),
+  database,
+  username,
+  password,
   {
-    dialect: "mysql",
-    host: getenv("MYSQL_HOST"),
+    dialect,
+    host,
+    port,
+    retry: {
+      max: 5,
+      match: [/SequelizeConnectionError/i, /ETIMEOUT/i, /ESOCKET/i],
+    },
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 70000,
+      idle: 10000,
+    },
+    dialectOptions: dialect === "mssql"
+      ? {
+          options: {
+            encrypt: asBool(getenv("DB_SSL"), true),
+            trustServerCertificate: !asBool(
+              getenv("DB_SSL_REJECT_UNAUTHORIZED"),
+              true
+            ),
+            connectTimeout:
+              Number(getenv("DB_CONNECT_TIMEOUT") || 15000) || 15000,
+            requestTimeout:
+              Number(getenv("DB_REQUEST_TIMEOUT") || 15000) || 15000,
+          },
+        }
+      : {},
   }
 );
