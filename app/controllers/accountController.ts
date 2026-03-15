@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import multer from "multer";
 import fs from "fs";
+import path from "path";
 import models from "../models";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Responser = require("../response/index");
@@ -12,7 +13,14 @@ type AuthRequest = Request & {
   body: any;
 };
 
-const uploadMiddleware = multer({ dest: "/looloo/uploads/" }).single("file");
+const UPLOAD_DIR = path.join(process.cwd(), "uploads");
+
+// Ensure upload directory exists at startup
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
+
+const uploadMiddleware = multer({ dest: UPLOAD_DIR }).single("file");
 
 class AccountController {
   async create(req: AuthRequest, res: Response): Promise<Response> {
@@ -121,7 +129,10 @@ class AccountController {
   };
 
   preview = (req: Request, res: Response): Response | void => {
-    const filePath = "/looloo/uploads/" + req.params.filename;
+    const filename = Array.isArray(req.params.filename)
+      ? req.params.filename[0]
+      : req.params.filename;
+    const filePath = path.join(UPLOAD_DIR, filename);
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: "File not found" });
     }
@@ -132,7 +143,7 @@ class AccountController {
     if (req.body.file || req.body.fileremoved === "1") {
       const account = await models.account.findOne({ _id: req.body.account_id });
       if (account?.file) {
-        fs.unlink(`/looloo/uploads/${account.file}`, (unlinkErr) => {
+        fs.unlink(path.join(UPLOAD_DIR, account.file), (unlinkErr) => {
           if (unlinkErr) {
             console.error("Error deleting file:", unlinkErr);
           }

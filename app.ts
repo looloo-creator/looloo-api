@@ -94,7 +94,6 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(corsAll(ALLOWED_ORIGINS, ALLOWED_SUFFIXES));
-app.options("*", cors(corsOptions));
 /* cors */
 
 app.use(express.json());

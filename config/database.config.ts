@@ -2,7 +2,8 @@ import { Sequelize, Dialect } from "sequelize";
 import { getenv } from "../app/Utils/common";
 
 export const mongo = {
-  url: getenv("MONGO_URL"),
+  // Default to local dev DB if env not provided to avoid invalid connection strings
+  url: getenv("MONGO_URL", "mongodb://127.0.0.1:27017/looloo"),
 };
 
 const asBool = (value?: string, fallback = false) => {
