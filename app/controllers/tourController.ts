@@ -10,7 +10,7 @@ class TourController {
     let response;
     if (!req.user?.id) {
       response = Responser.custom("R401");
-      return res.status(response.statusCode).send(response.data);
+      return res.status(401).send(response.data);
     }
     const validation = new Validator(req.body, {
       plan: "required",
@@ -45,7 +45,7 @@ class TourController {
     try {
       if (!req.user?.id) {
         response = Responser.custom("R401");
-        return res.status(response.statusCode).send(response.data);
+        return res.status(401).send(response.data);
       }
       const toursList = await models.tour.find({ user_id: req.user.id, status: true });
       response = Responser.success(toursList);
@@ -59,7 +59,7 @@ class TourController {
     let response;
     if (!req.user?.id) {
       response = Responser.custom("R401");
-      return res.status(response.statusCode).send(response.data);
+      return res.status(401).send(response.data);
     }
     const validation = new Validator(req.body, { tour_id: "required" });
     if (!validation.passes()) {

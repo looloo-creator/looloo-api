@@ -17,7 +17,7 @@ export const authenticate = (
   const token = req.headers.authorization?.replace("Bearer ", "");
   if (!token) {
     const response = Responser.custom("R401");
-    return res.status(response.statusCode).send(response.data);
+    return res.status(401).send(response.data);
   }
 
   jwt.verify(
@@ -26,13 +26,13 @@ export const authenticate = (
     async (err: any, decoded: any) => {
       if (err || !decoded) {
         const response = Responser.custom("R401");
-        return res.status(response.statusCode).send(response.data);
+        return res.status(401).send(response.data);
       }
       const userId = decoded.user_id || decoded.id;
       const user = await models.user.findOne({ where: { id: userId } });
       if (!user || user.status !== USERSTATUS.ACTIVE) {
         const response = Responser.custom("R401");
-        return res.status(response.statusCode).send(response.data);
+        return res.status(401).send(response.data);
       }
       req.user = { id: user.id, email: user.email, name: user.name };
       return next();
