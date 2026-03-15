@@ -1,43 +1,38 @@
-/* Mongo Credentials */
-const sequelize = require("sequelize");
-const { getenv } = require("../app/Utils/common");
+import { Sequelize, Dialect } from "sequelize";
+import { getenv } from "../app/Utils/common";
 
-module.exports.mongo = {
-  url: getenv("MONGO_URL")
-}
+export const mongo = {
+  url: getenv("MONGO_URL"),
+};
 
-const asBool = (value, fallback = false) => {
+const asBool = (value?: string, fallback = false) => {
   if (value === undefined) return fallback;
   return value === "true" || value === "1";
 };
 
-const dialect = getenv("DB_DIALECT") || "mssql";
+const dialect = (getenv("DB_DIALECT") as Dialect) || "mssql";
 const host = getenv("DB_HOST");
 const port = Number(getenv("DB_PORT") || 0) || undefined;
 const username = getenv("DB_USER");
 const password = getenv("DB_PASS");
 const database = getenv("DB_NAME");
 
-/* Database Connection */
-module.exports.mysql = new sequelize(
-  database,
-  username,
-  password,
-  {
-    dialect,
-    host,
-    port,
-    retry: {
-      max: 5,
-      match: [/SequelizeConnectionError/i, /ETIMEOUT/i, /ESOCKET/i],
-    },
-    pool: {
-      max: 5,
-      min: 0,
-      acquire: 70000,
-      idle: 10000,
-    },
-    dialectOptions: dialect === "mssql"
+export const mysql = new Sequelize(database, username, password, {
+  dialect,
+  host,
+  port,
+  retry: {
+    max: 5,
+    match: [/SequelizeConnectionError/i, /ETIMEOUT/i, /ESOCKET/i],
+  },
+  pool: {
+    max: 5,
+    min: 0,
+    acquire: 70000,
+    idle: 10000,
+  },
+  dialectOptions:
+    dialect === "mssql"
       ? {
           options: {
             encrypt: asBool(getenv("DB_SSL"), true),
@@ -52,5 +47,6 @@ module.exports.mysql = new sequelize(
           },
         }
       : {},
-  }
-);
+});
+
+export default { mysql, mongo };

@@ -1,8 +1,8 @@
 module.exports = {
   apps : [{
-    name: "one-pay-api",
+    name: "looloo-api",
     script: "./bin/www",
-		// watch: "../one-pay-api/",
+		// watch: "../looloo-api/",
 		watch: ["server", "client"],
 		watch_options: {
 		    followSymlinks: false,

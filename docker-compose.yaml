@@ -47,7 +47,7 @@ services:
   app:
     build: .
     restart: always
-    container_name: one-pay-api
+    container_name: looloo-api
     working_dir: /usr/src/app
     volumes:
       - ./:/usr/src/app
