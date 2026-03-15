@@ -1,4 +1,4 @@
-# one-pay-api
+# looloo-api
 
 # Docker Installation
 If Docker Not Installed in Local system Run this Comand else Ignore this
@@ -16,7 +16,7 @@ sudo docker compose up -d
 # Endpoints
 Adminer: http://localhost:8081/
 Mongo Express: http://localhost:8082/
-OnePayApi: http://localhost:3000/
+Looloo API: http://localhost:3000/
 
 # Adminer Login credentials 
     server: mysql, 
@@ -24,5 +24,5 @@ OnePayApi: http://localhost:3000/
     password: 12345
     
 # Useful Comands 
-    pm2 reload: sudo docker exec one-pay-api pm2 reload all --update-env
+    pm2 reload: sudo docker exec looloo-api pm2 reload all --update-env
     Rebuild and Run Application : sudo docker compose build --no-cache && sudo docker compose up -d

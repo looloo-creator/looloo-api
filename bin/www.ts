@@ -4,7 +4,7 @@ import http from "http";
 import debugLib from "debug";
 import app from "../app";
 
-const debug = debugLib("one-pay-api:server");
+const debug = debugLib("looloo-api:server");
 
 const port = normalizePort(process.env.PORT || "3000");
 app.set("port", port);

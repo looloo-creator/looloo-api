@@ -18,6 +18,7 @@ import membersRouter from "./app/routes/members";
 import accountsRouter from "./app/routes/accounts";
 
 import authenticate from "./app/middlewares/authentication";
+import corsAll from "./app/middlewares/corsall";
 
 /* Server initiation */
 const app = express();
@@ -62,9 +63,25 @@ app.set("view engine", "pug");
 app.use(logger("dev"));
 
 /* cors */
-const ALLOWED_ORIGIN = "http://localhost:4200";
+const ALLOWED_ORIGINS = [
+  "http://localhost:4200",
+] as const;
+const ALLOWED_SUFFIXES = [".azurestaticapps.net"] as const;
+
+const isAllowedOrigin = (origin?: string | string[]) => {
+  if (typeof origin !== "string") return false;
+  if (ALLOWED_ORIGINS.includes(origin as (typeof ALLOWED_ORIGINS)[number])) {
+    return true;
+  }
+  return ALLOWED_SUFFIXES.some((suffix) => origin.endsWith(suffix));
+};
+
+const getOrigin = (origin?: string | string[]) =>
+  isAllowedOrigin(origin) ? (origin as string) : ALLOWED_ORIGINS[0];
 const corsOptions = {
-  origin: ALLOWED_ORIGIN,
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean | string) => void) => {
+    callback(null, getOrigin(origin));
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: [
@@ -75,24 +92,9 @@ const corsOptions = {
     "Authorization",
   ],
 };
-// Force explicit headers for credentialed requests and short-circuit OPTIONS
-app.use((req: Request, res: Response, next: NextFunction) => {
-  res.header("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-  );
-  res.header(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-  );
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204);
-  }
-  return next();
-});
 app.use(cors(corsOptions));
+app.use(corsAll(ALLOWED_ORIGINS, ALLOWED_SUFFIXES));
+app.options("*", cors(corsOptions));
 /* cors */
 
 app.use(express.json());

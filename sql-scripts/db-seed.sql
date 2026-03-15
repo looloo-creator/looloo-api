@@ -15,11 +15,11 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 
--- Dumping database structure for onepay
-CREATE DATABASE IF NOT EXISTS `onepay` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
-USE `onepay`;
+-- Dumping database structure for looloo
+CREATE DATABASE IF NOT EXISTS `looloo` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+USE `looloo`;
 
--- Dumping structure for table onepay.users
+-- Dumping structure for table looloo.users
 CREATE TABLE IF NOT EXISTS `users` (
   `id` int NOT NULL AUTO_INCREMENT,
   `email` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,

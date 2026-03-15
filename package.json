@@ -1,11 +1,12 @@
 {
-  "name": "one-pay-api",
+  "name": "looloo-api",
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node -r ts-node/register/transpile-only ./bin/www.ts",
-    "dev": "nodemon --exec ts-node -r tsconfig-paths/register ./bin/www.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "start": "NODE_ENV=production node dist/bin/www.js",
+    "prestart": "npm run build",
+    "dev": "nodemon --exec ts-node -r tsconfig-paths/register ./bin/www.ts"
   },
   "dependencies": {
     "axios": "^1.13.6",

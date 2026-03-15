@@ -12,7 +12,7 @@ type AuthRequest = Request & {
   body: any;
 };
 
-const uploadMiddleware = multer({ dest: "/onepay/uploads/" }).single("file");
+const uploadMiddleware = multer({ dest: "/looloo/uploads/" }).single("file");
 
 class AccountController {
   async create(req: AuthRequest, res: Response): Promise<Response> {
@@ -121,7 +121,7 @@ class AccountController {
   };
 
   preview = (req: Request, res: Response): Response | void => {
-    const filePath = "/onepay/uploads/" + req.params.filename;
+    const filePath = "/looloo/uploads/" + req.params.filename;
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: "File not found" });
     }
@@ -132,7 +132,7 @@ class AccountController {
     if (req.body.file || req.body.fileremoved === "1") {
       const account = await models.account.findOne({ _id: req.body.account_id });
       if (account?.file) {
-        fs.unlink(`/onepay/uploads/${account.file}`, (unlinkErr) => {
+        fs.unlink(`/looloo/uploads/${account.file}`, (unlinkErr) => {
           if (unlinkErr) {
             console.error("Error deleting file:", unlinkErr);
           }

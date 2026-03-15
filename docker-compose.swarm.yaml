@@ -1,7 +1,7 @@
 version: "3.0"
 services:
   mysql:
-    image: rajasekar9698/one-pay-mysql:1.0.0
+    image: rajasekar9698/looloo-mysql:1.0.0
     volumes:
       - "./sql-scripts:/docker-entrypoint-initdb.d"
       - /docker/database/mysql:/var/lib/mysql
@@ -11,7 +11,7 @@ services:
       - one_pay_swarm_network
 
   adminer:
-    image: rajasekar9698/one-pay-adminer:1.0.0
+    image: rajasekar9698/looloo-adminer:1.0.0
     environment:
       ADMINER_DEFAULT_SERVER: mysql
     ports:
@@ -20,7 +20,7 @@ services:
       - one_pay_swarm_network
 
   mongo:
-    image: rajasekar9698/one-pay-mongo:1.0.0
+    image: rajasekar9698/looloo-mongo:1.0.0
     volumes:
       - /docker/database/mongo:/data/db
     ports:
@@ -29,7 +29,7 @@ services:
       - one_pay_swarm_network
 
   mongo-express:
-    image: rajasekar9698/one-pay-mongo-express:1.0.0
+    image: rajasekar9698/looloo-mongo-express:1.0.0
     ports:
       - 8082:8081
     environment:
@@ -38,7 +38,7 @@ services:
       - one_pay_swarm_network
 
   api:
-    image: rajasekar9698/one-pay-api:2.0.0
+    image: rajasekar9698/looloo-api:2.0.0
     working_dir: /usr/src/app
     volumes:
       - ./:/usr/src/app
