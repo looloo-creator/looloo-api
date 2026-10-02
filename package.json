@@ -11,6 +11,7 @@
     "k8s:secrets": "node scripts/apply-k8s-secret.cjs"
   },
   "dependencies": {
+    "@prometheus-io/client": "^0.16.1",
     "axios": "^1.13.6",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.2",

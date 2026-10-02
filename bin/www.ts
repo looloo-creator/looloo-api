@@ -2,7 +2,7 @@
 
 import http from "http";
 import debugLib from "debug";
-import app from "../app";
+import app, { metricsRegistry } from "../app";
 
 const debug = debugLib("looloo-api:server");
 
@@ -13,6 +13,24 @@ const server = http.createServer(app);
 server.listen(port);
 server.on("error", onError);
 server.on("listening", onListening);
+
+const metricsPort = Number(process.env.METRICS_PORT || 9464);
+const metricsServer = http.createServer(async (req, res) => {
+  if (req.url !== "/metrics") {
+    res.writeHead(404).end();
+    return;
+  }
+
+  try {
+    res.writeHead(200, { "Content-Type": metricsRegistry.contentType });
+    res.end(await metricsRegistry.metrics());
+  } catch {
+    res.writeHead(500).end();
+  }
+});
+metricsServer.listen(metricsPort, "0.0.0.0", () => {
+  console.log(`Metrics listening on port ${metricsPort}`);
+});
 
 function normalizePort(val: string) {
   const parsedPort = parseInt(val, 10);

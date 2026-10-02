@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import logger from "morgan";
 import mongoose from "mongoose";
 import cors from "cors";
+import { collectDefaultMetrics, Counter, Histogram, Registry } from "@prometheus-io/client";
 import Responser from "./app/response";
 
 /* Environment variable kickstart */
@@ -22,6 +23,44 @@ import corsAll from "./app/middlewares/corsall";
 
 /* Server initiation */
 const app = express();
+export const metricsRegistry = new Registry();
+
+collectDefaultMetrics({ register: metricsRegistry, prefix: "looloo_api_" });
+
+const httpRequests = new Counter({
+  name: "looloo_api_http_requests_total",
+  help: "Total HTTP requests handled by the Looloo API.",
+  labelNames: ["method", "route", "status_code"],
+  registers: [metricsRegistry],
+});
+
+const httpRequestDuration = new Histogram({
+  name: "looloo_api_http_request_duration_seconds",
+  help: "HTTP request duration in seconds.",
+  labelNames: ["method", "route", "status_code"],
+  buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
+  registers: [metricsRegistry],
+});
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const startedAt = process.hrtime.bigint();
+  res.once("finish", () => {
+    const route = req.route?.path
+      ? `${req.baseUrl}${req.route.path}`
+      : "unmatched";
+    const labels = {
+      method: req.method,
+      route,
+      status_code: String(res.statusCode),
+    };
+    httpRequests.inc(labels);
+    httpRequestDuration.observe(
+      labels,
+      Number(process.hrtime.bigint() - startedAt) / 1e9,
+    );
+  });
+  next();
+});
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
