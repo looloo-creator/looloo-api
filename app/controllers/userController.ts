@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { randomUUID } from "node:crypto";
 import { Op } from "sequelize";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -398,46 +399,45 @@ class UserController {
         return res.status(200).send({ success: true, data });
       }
 
-      // Otherwise issue a server-signed JWT for test purposes
+      // Ensure auth middleware can resolve the test JWT to a database user.
       const testEmail = req.body?.email || `test+${provider}@example.com`;
-      const accessToken = jwt.sign(
-        { user_id: `test-${provider}`, email: testEmail, test: true },
-        getenv("JWT_SECRET_KEY"),
-        { expiresIn: "1h" }
-      );
+      let userData = await models.user.findOne({ where: { email: testEmail } });
+      const now = new Date();
+      if (!userData) {
+        userData = await models.user.create({
+          email: testEmail,
+          username: `E2E-${randomUUID().slice(0, 20)}`,
+          password: null,
+          is_email_verified: 1,
+          status: USERSTATUS.ACTIVE,
+          is_active: 1,
+          email_verified_at: now,
+          last_login: now,
+        });
+      } else {
+        userData.last_login = now;
+        userData.is_email_verified = 1;
+        userData.is_active = 1;
+        userData.status = USERSTATUS.ACTIVE;
+        await userData.save();
+      }
+
+      const tokenPayload = {
+        user_id: userData.id,
+        email: testEmail,
+        test: true,
+      };
+      const accessToken = jwt.sign(tokenPayload, getenv("JWT_SECRET_KEY"), {
+        expiresIn: "1h",
+      });
       const refreshToken = jwt.sign(
-        { user_id: `test-${provider}`, email: testEmail, test: true },
+        tokenPayload,
         getenv("JWT_REFRESH_SECRET_KEY"),
-        { expiresIn: "7d" }
+        { expiresIn: "7d" },
       );
 
-      // Optionally persist a lightweight test user so DB-backed guards work
-      try {
-        let userData = await models.user.findOne({ where: { email: testEmail } });
-        const now = new Date();
-        if (!userData) {
-          userData = await models.user.create({
-            email: testEmail,
-            username: `Test ${provider}`,
-            password: null,
-            is_email_verified: 1,
-            status: USERSTATUS.ACTIVE,
-            is_active: 1,
-            email_verified_at: now,
-            last_login: now,
-            refresh_token: refreshToken,
-          });
-        } else {
-          userData.refresh_token = refreshToken;
-          userData.last_login = now;
-          userData.is_email_verified = 1;
-          userData.is_active = 1;
-          userData.status = USERSTATUS.ACTIVE;
-          await userData.save();
-        }
-      } catch (e) {
-        // non-fatal - continue even if DB persistence fails
-      }
+      userData.refresh_token = refreshToken;
+      await userData.save();
 
       // set refresh cookie so browser client tests can use it
       this.setRefreshCookie(res, refreshToken);
