@@ -373,6 +373,82 @@ class UserController {
       });
     }
   }
+
+  // Mock/test token issuer endpoint - useful for e2e tests
+  async getTestToken(req: Request, res: Response): Promise<Response> {
+    if (
+      getenv("ENABLE_TEST_TOKEN") !== "true" ||
+      getenv("NODE_ENV") === "production"
+    ) {
+      return res.status(404).send(Responser.error("Not found").data);
+    }
+
+    try {
+      const provider = req.body?.provider || "google";
+      const externalEndpoint = getenv("TEST_TOKEN_ENDPOINT");
+
+      // If a remote test-token endpoint is configured, proxy the request
+      if (externalEndpoint) {
+        const resp = await fetch(externalEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ provider, ...req.body }),
+        });
+        const data = await resp.json();
+        return res.status(200).send({ success: true, data });
+      }
+
+      // Otherwise issue a server-signed JWT for test purposes
+      const testEmail = req.body?.email || `test+${provider}@example.com`;
+      const accessToken = jwt.sign(
+        { user_id: `test-${provider}`, email: testEmail, test: true },
+        getenv("JWT_SECRET_KEY"),
+        { expiresIn: "1h" }
+      );
+      const refreshToken = jwt.sign(
+        { user_id: `test-${provider}`, email: testEmail, test: true },
+        getenv("JWT_REFRESH_SECRET_KEY"),
+        { expiresIn: "7d" }
+      );
+
+      // Optionally persist a lightweight test user so DB-backed guards work
+      try {
+        let userData = await models.user.findOne({ where: { email: testEmail } });
+        const now = new Date();
+        if (!userData) {
+          userData = await models.user.create({
+            email: testEmail,
+            username: `Test ${provider}`,
+            password: null,
+            is_email_verified: 1,
+            status: USERSTATUS.ACTIVE,
+            is_active: 1,
+            email_verified_at: now,
+            last_login: now,
+            refresh_token: refreshToken,
+          });
+        } else {
+          userData.refresh_token = refreshToken;
+          userData.last_login = now;
+          userData.is_email_verified = 1;
+          userData.is_active = 1;
+          userData.status = USERSTATUS.ACTIVE;
+          await userData.save();
+        }
+      } catch (e) {
+        // non-fatal - continue even if DB persistence fails
+      }
+
+      // set refresh cookie so browser client tests can use it
+      this.setRefreshCookie(res, refreshToken);
+
+      return res.status(200).send(
+        Responser.success({ jwt: accessToken, provider, test: true }).data
+      );
+    } catch (error: any) {
+      return res.status(500).send(Responser.error(error?.message || error).data);
+    }
+  }
 }
 
 export const userController = new UserController();
