@@ -8,6 +8,9 @@
     "prestart": "npm run build",
     "dev": "nodemon --exec ts-node -r tsconfig-paths/register ./bin/www.ts",
     "env:init": "node scripts/init-env.cjs",
+    "db:migrate": "node scripts/migrate-postgres.cjs core",
+    "db:migrate:rag": "node scripts/migrate-postgres.cjs rag",
+    "db:import-mongo-json": "node scripts/import-mongo-export.cjs",
     "k8s:secrets": "node scripts/apply-k8s-secret.cjs"
   },
   "dependencies": {
@@ -24,13 +27,11 @@
     "jose": "^6.2.1",
     "jsonwebtoken": "^9.0.3",
     "kafkajs": "^2.2.4",
-    "mongoose": "^9.3.0",
     "morgan": "~1.10.1",
     "multer": "^2.1.1",
     "pg": "^8.23.0",
     "pug": "^3.0.4",
     "sequelize": "^6.37.8",
-    "tedious": "^19.2.1",
     "validatorjs": "^3.22.1"
   },
   "devDependencies": {

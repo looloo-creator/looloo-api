@@ -25,6 +25,9 @@ const uploadMiddleware = multer({ dest: UPLOAD_DIR }).single("file");
 class AccountController {
   async create(req: AuthRequest, res: Response): Promise<Response> {
     let response;
+    if (req.body.members !== undefined && !Array.isArray(req.body.members)) {
+      req.body.members = req.body.members ? [req.body.members] : [];
+    }
     const validation = new Validator(req.body, {
       tour_id: "required",
       type: "required",
@@ -40,19 +43,18 @@ class AccountController {
     }
 
     try {
+      const tour = await models.tour.findOne({ where: { id: req.body.tour_id, user_id: req.user?.id, status: true } });
+      if (!tour) return res.status(404).send(Responser.custom("R404").data);
       if (req.body.account_id) {
         await this.updateExisting(req);
-        const account = await models.account.findOne({
-          _id: req.body.account_id,
-        });
+        const account = await models.account.findOne({ where: { id: req.body.account_id, user_id: req.user?.id } });
         response = Responser.custom("R215", account);
       } else {
-        const account = new models.account({
+        const account = await models.account.create({
+          ...req.body,
           user_id: req.user?.id,
           status: true,
-          ...req.body,
         });
-        await account.save();
         response = Responser.custom("R214", account);
       }
     } catch (error) {
@@ -71,13 +73,7 @@ class AccountController {
     }
 
     try {
-      const accountsList = await models.account
-        .find({
-          user_id: req.user?.id,
-          tour_id: req.body.tour_id,
-          status: true,
-        })
-        .sort({ date: 1, type: 1 });
+      const accountsList = await models.account.findAll({ where: { user_id: req.user?.id, tour_id: req.body.tour_id, status: true }, order: [["date", "ASC"], ["type", "ASC"]] });
       response = Responser.success(accountsList);
     } catch (error) {
       response = Responser.error(error);
@@ -95,10 +91,10 @@ class AccountController {
     }
 
     try {
-      const account = await models.account.findOne({ _id: req.body.account_id });
+      const account = await models.account.findOne({ where: { id: req.body.account_id, user_id: req.user?.id } });
       if (account) {
         account.status = false;
-        await account.save();
+        await account.update({ status: false });
         response = Responser.custom("R216");
       } else {
         response = Responser.custom("R404");
@@ -141,7 +137,7 @@ class AccountController {
 
   private async updateExisting(req: AuthRequest) {
     if (req.body.file || req.body.fileremoved === "1") {
-      const account = await models.account.findOne({ _id: req.body.account_id });
+      const account = await models.account.findOne({ where: { id: req.body.account_id, user_id: req.user?.id } });
       if (account?.file) {
         fs.unlink(path.join(UPLOAD_DIR, account.file), (unlinkErr) => {
           if (unlinkErr) {
@@ -154,7 +150,8 @@ class AccountController {
         req.body.fileName = "";
       }
     }
-    await models.account.findOneAndUpdate({ _id: req.body.account_id }, req.body);
+    const { user_id: _ignoredUserId, account_id: _ignoredAccountId, ...updates } = req.body;
+    await models.account.update(updates, { where: { id: req.body.account_id, user_id: req.user?.id } });
   }
 }
 

@@ -17,19 +17,19 @@ class MemberController {
       return res.status(response.statusCode).send(response.data);
     }
     try {
+      const tour = await models.tour.findOne({ where: { id: req.body.tour_id, user_id: req.user?.id, status: true } });
+      if (!tour) return res.status(404).send(Responser.custom("R404").data);
       if (req.body.member_id) {
-        await models.member.findOneAndUpdate(
-          { _id: req.body.member_id },
-          req.body
-        );
+        const { user_id: _ignoredUserId, member_id: _ignoredMemberId, ...updates } = req.body;
+        const [updated] = await models.member.update(updates, { where: { id: req.body.member_id, user_id: req.user?.id } });
+        if (!updated) return res.status(404).send(Responser.custom("R404").data);
         response = Responser.custom("R212");
       } else {
-        const member = new models.member({
+        const member = await models.member.create({
+          ...req.body,
           user_id: req.user?.id,
           status: true,
-          ...req.body,
         });
-        await member.save();
         response = Responser.custom("R211");
       }
     } catch (error) {
@@ -46,11 +46,7 @@ class MemberController {
       return res.status(response.statusCode).send(response.data);
     }
     try {
-      const membersList = await models.member.find({
-        user_id: req.user?.id,
-        tour_id: req.body.tour_id,
-        status: true,
-      });
+      const membersList = await models.member.findAll({ where: { user_id: req.user?.id, tour_id: req.body.tour_id, status: true } });
       response = Responser.success(membersList);
     } catch (error) {
       response = Responser.error(error);
@@ -66,7 +62,7 @@ class MemberController {
       return res.status(response.statusCode).send(response.data);
     }
     try {
-      const member = await models.member.findOne({ _id: req.body.member_id });
+      const member = await models.member.findOne({ where: { id: req.body.member_id, user_id: req.user?.id } });
       if (member) {
         member.status = false;
         await member.save();

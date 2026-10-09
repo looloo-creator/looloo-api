@@ -28,21 +28,24 @@ sudo sh ./docker.sh
 sudo docker network create one_pay_network
 
 # Build & Run Application
-sudo docker compose up --build -d
+docker compose up --build
 
 # Run Applications
-sudo docker compose up -d
+docker compose up -d
 
 # Endpoints
-Adminer: http://localhost:8081/
-Mongo Express: http://localhost:8082/
 Looloo API: http://localhost:3000/
 
-# Adminer Login credentials 
-    server: mysql, 
-    username: root, 
-    password: 12345
-    
 # Useful Comands 
-    pm2 reload: sudo docker exec looloo-api pm2 reload all --update-env
-    Rebuild and Run Application : sudo docker compose build --no-cache && sudo docker compose up -d
+    Rebuild and Run Application : docker compose build --no-cache && docker compose up -d
+
+## PostgreSQL schema and legacy data
+
+Set the PostgreSQL connection values in `.env`, then run `npm run db:migrate` to
+create the tour, member, and account tables. Install the PostgreSQL 18 extension package on the host with `sudo apt-get update && sudo apt-get install -y postgresql-18-pgvector`, then run `DB_HOST=127.0.0.1 npm run db:migrate:rag` to add assistant knowledge search. To transfer
+existing Mongo records, export the `tours`, `tour_members`, and `accounts`
+collections as JSON files named `tours.json`, `tour_members.json`, and
+`accounts.json` in one folder. After confirming users are already in PostgreSQL,
+run `npm run db:import-mongo-json -- /path/to/export-folder`. The importer keeps
+the old record IDs and relationship references. Do not drop the old data until
+the imported row counts and app reports have been checked.

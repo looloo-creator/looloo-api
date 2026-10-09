@@ -1,17 +1,10 @@
 import { DataTypes } from "sequelize";
 import dbConfig from "../../../config/database.config";
 
-const db = dbConfig.mysql;
-
-const UserModel = db.define(
+const UserModel = dbConfig.postgres.define(
   "user",
   {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
-      allowNull: false,
-    },
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true, allowNull: false },
     email: { type: DataTypes.STRING },
     username: { type: DataTypes.STRING },
     password: { type: DataTypes.STRING },
@@ -23,14 +16,8 @@ const UserModel = db.define(
     last_login: { type: DataTypes.DATE },
     is_active: { type: DataTypes.INTEGER },
   },
-  {
-    freezeTableName: false,
-    timestamps: true,
-    createdAt: "created_at",
-    updatedAt: "updated_at",
-  }
+  { freezeTableName: false, timestamps: true, createdAt: "created_at", updatedAt: "updated_at" }
 );
 
 export default UserModel;
-// Ensure CommonJS compatibility where required()
 module.exports = UserModel;

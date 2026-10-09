@@ -1,63 +1,36 @@
-version: "3.0"
 services:
-  mysql:
-    image: mysql:8.1.0
-    restart: always
-    container_name: mysql
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: looloo-postgres
+    restart: "no"
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASS:?Set DB_PASS in looloo-api/.env}
+      POSTGRES_DB: ${DB_NAME:-looloo}
+    ports:
+      - "5432:5432"
     volumes:
-      - "./sql-scripts:/docker-entrypoint-initdb.d"
-      - /docker/database/mysql:/var/lib/mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: "12345"
+      - /docker/database/postgres:/var/lib/postgresql/data
     networks:
-      - one_pay_network
-  adminer:
-    image: adminer
-    restart: always
-    container_name: adminer
-    environment:
-      ADMINER_DEFAULT_SERVER: mysql
-    ports:
-      - 8081:8080
-    networks:
-      - one_pay_network
-  mongo:
-    image: mongo:7.0.1
-    restart: always
-    container_name: mongo
-    volumes:
-      - /docker/database/mongo:/data/db
-    ports:
-      - "27018:27017"
-    networks:
-      - one_pay_network
-  mongo-express:
-    image: mongo-express
-    restart: always
-    container_name: mongo-express
-    links:
-      - mongo
-    ports:
-      - 8082:8081
-    environment:
-      ME_CONFIG_MONGODB_SERVER: mongo
-      ME_CONFIG_SITE_BASEURL: '/mongo'
-    networks:
-      - one_pay_network
+      looloo-network:
+        aliases: [postgres]
+
   app:
     build: .
-    restart: always
     container_name: looloo-api
-    working_dir: /usr/src/app
-    volumes:
-      - ./:/usr/src/app
-      - /usr/src/app/node_modules
-    links:
-      - mongo
+    restart: "no"
+    env_file: .env
+    environment:
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_SSL: "false"
     ports:
-      - "3000:8080"
-    networks:
-      - one_pay_network
+      - "3000:3000"
+    depends_on:
+      - postgres
+    networks: [looloo-network]
+
 networks:
-  one_pay_network:
-    external: true
+  looloo-network:
+    name: looloo-network

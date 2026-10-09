@@ -1,12 +1,12 @@
 // Keep CommonJS compatibility for existing model modules
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const userModel = require("./mysql/user.model");
+const userModel = require("./postgres/users.model");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const TourModel = require("./mongo/tours.model");
+const TourModel = require("./postgres/tours.model").default;
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const MemberModel = require("./mongo/members.model");
+const MemberModel = require("./postgres/members.model").default;
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const AccountsModel = require("./mongo/accounts.model");
+const AccountsModel = require("./postgres/accounts.model").default;
 
 export const models = {
   user: userModel,

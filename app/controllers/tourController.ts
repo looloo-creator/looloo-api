@@ -23,15 +23,17 @@ class TourController {
     }
     try {
       if (req.body.tour_id) {
-        await models.tour.findOneAndUpdate({ _id: req.body.tour_id }, req.body);
+        const { user_id: _ignoredUserId, tour_id: _ignoredTourId, ...updates } = req.body;
+        const [updated] = await models.tour.update(updates, { where: { id: req.body.tour_id, user_id: req.user.id } });
+        if (!updated) return res.status(404).send(Responser.custom("R404").data);
         response = Responser.custom("R209");
       } else {
-        const tour = new models.tour({
+        const tour = await models.tour.create({
+          ...req.body,
           user_id: req.user?.id,
           status: true,
-          ...req.body,
         });
-        const data = await tour.save();
+        const data = tour;
         response = Responser.custom("R208", data);
       }
     } catch (error) {
@@ -47,7 +49,7 @@ class TourController {
         response = Responser.custom("R401");
         return res.status(401).send(response.data);
       }
-      const toursList = await models.tour.find({ user_id: req.user.id, status: true });
+      const toursList = await models.tour.findAll({ where: { user_id: req.user.id, status: true } });
       response = Responser.success(toursList);
     } catch (error) {
       response = Responser.error(error);
@@ -67,7 +69,7 @@ class TourController {
       return res.status(response.statusCode).send(response.data);
     }
     try {
-      const tour = await models.tour.findOne({ _id: req.body.tour_id });
+      const tour = await models.tour.findOne({ where: { id: req.body.tour_id, user_id: req.user.id } });
       if (tour) {
         tour.status = false;
         await tour.save();

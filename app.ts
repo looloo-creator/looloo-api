@@ -2,7 +2,6 @@ import express, { Request, Response, NextFunction } from "express";
 import path from "path";
 import cookieParser from "cookie-parser";
 import logger from "morgan";
-import mongoose from "mongoose";
 import cors from "cors";
 import { collectDefaultMetrics, Counter, Histogram, Registry } from "@prometheus-io/client";
 import Responser from "./app/response";
@@ -69,7 +68,7 @@ const warmupSqlConnection = async () => {
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
-      await dbConfig.mysql.authenticate();
+      await dbConfig.postgres.authenticate();
       console.log("SQL connected Successfully!");
       return;
     } catch (error: any) {
@@ -139,16 +138,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
-
-mongoose
-  .connect(dbConfig.mongo.url)
-  .then(() => {
-    console.log("Mongodb connected Successfully!");
-  })
-  .catch((err) => {
-    console.log("Could not connect to the Mongodb. Exiting now...", err);
-    process.exit();
-  });
 
 app.use(async (req: Request, res: Response, next: NextFunction) => {
   if (isDbReady) {
